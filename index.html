@@ -1,63 +1,78 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>🌍 World National Radio Map</title>
+<title>🌍 World Radio Map</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Segoe UI',sans-serif;background:#0d1117;color:#e6edf3;height:100vh;display:flex;flex-direction:column}
-#header{background:#161b22;padding:12px 20px;border-bottom:1px solid #30363d}
-#header h1{font-size:1.2rem;color:#58a6ff}
-#header p{font-size:0.8rem;color:#8b949e;margin-top:4px}
+body{font-family:Arial,sans-serif;background:#111;color:#fff;height:100vh;display:flex;flex-direction:column}
+#header{background:#222;padding:15px;border-bottom:2px solid #444;text-align:center}
+#header h1{font-size:1.5rem;color:#4a9eff}
 #map{flex:1}
-#player-bar{background:#161b22;border-top:1px solid #30363d;padding:0;height:0;overflow:hidden;transition:height .3s}
-#player-bar.visible{height:90px;padding:12px 20px}
-#player-inner{display:flex;align-items:center;gap:16px}
-#station-info{flex:1}
-#station-name{font-size:1rem;font-weight:600;color:#58a6ff}
-#station-country{font-size:0.8rem;color:#8b949e;margin-top:2px}
-#audio-player{flex:2}
-audio{width:100%;height:36px}
-.leaflet-popup-content-wrapper{background:#161b22;border:1px solid #30363d;border-radius:10px;color:#e6edf3}
-.leaflet-popup-tip{background:#161b22}
-.popup-title{font-weight:700;font-size:1rem;color:#58a6ff;margin-bottom:8px}
-.station-list{max-height:200px;overflow-y:auto}
-.station-item{padding:7px 10px;margin:4px 0;background:#0d1117;border-radius:6px;cursor:pointer;border:1px solid #30363d;transition:all .2s}
-.station-item:hover{background:#1f6feb22;border-color:#58a6ff}
-.station-item.playing{background:#1f6feb33;border-color:#58a6ff}
-.no-stations{color:#8b949e;font-size:0.85rem;padding:8px}
+#player{background:#222;padding:12px;border-top:2px solid #444;display:none}
+#player.show{display:block}
+audio{width:100%;max-width:600px;display:block;margin:10px auto}
+#info{text-align:center;margin-bottom:10px;color:#aaa}
 </style>
 </head>
 <body>
 <div id="header">
 <h1>🌍 World National Radio Map</h1>
-<p>Ülkelerin ulusal radyolarını haritada dinle • Powered by Radio Browser API</p>
+<p>Click markers to listen to national radio stations</p>
 </div>
 <div id="map"></div>
-<div id="player-bar">
-<div id="player-inner">
-<div id="station-info">
-<div id="station-name">—</div>
-<div id="station-country">—</div>
-</div>
-<div id="audio-player">
-<audio id="audio" controls autoplay></audio>
-</div>
-</div>
+<div id="player">
+<div id="info">—</div>
+<audio id="audio" controls></audio>
 </div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const C={TR:{n:"Türkiye",t:39,g:35,f:"🇹🇷"},US:{n:"United States",t:37.09,g:-95.71,f:"🇺🇸"},GB:{n:"UK",t:55.38,g:-3.44,f:"🇬🇧"},DE:{n:"Germany",t:51.17,g:10.45,f:"🇩🇪"},FR:{n:"France",t:46.23,g:2.21,f:"🇫🇷"},IT:{n:"Italy",t:41.87,g:12.57,f:"🇮🇹"},ES:{n:"Spain",t:40.46,g:-3.75,f:"🇪🇸"},RU:{n:"Russia",t:61.52,g:105.32,f:"🇷🇺"},JP:{n:"Japan",t:36.2,g:138.25,f:"🇯🇵"},CN:{n:"China",t:35.86,g:104.2,f:"🇨🇳"},BR:{n:"Brazil",t:-14.24,g:-51.93,f:"🇧🇷"},IN:{n:"India",t:20.59,g:78.96,f:"🇮🇳"},CA:{n:"Canada",t:56.13,g:-106.35,f:"🇨🇦"},AU:{n:"Australia",t:-25.27,g:133.78,f:"🇦🇺"},MX:{n:"Mexico",t:23.63,g:-102.55,f:"🇲🇽"}};
-const m=L.map('map').setView([30,10],2);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OSM'}).addTo(m);
-let cur=null;
-const pb=document.getElementById('player-bar'),sn=document.getElementById('station-name'),sc=document.getElementById('station-country'),a=document.getElementById('audio');
-function play(s,c,el){if(cur)cur.classList.remove('playing');a.src=s.url;sn.textContent=s.name;sc.textContent=c;pb.classList.add('visible');cur=el;if(el)el.classList.add('playing')}
-async function fetchSt(code){try{const r=await fetch(`https://de1.api.radio-browser.info/json/stations/bycountrycodeexact/${code}?limit=50&hidebroken=true&order=votes&reverse=true`);const st=await r.json();return st.filter(s=>s.url&&s.url_resolved)}catch(e){return[]}}
-for(const[code,country]of Object.entries(C)){const mk=L.marker([country.t,country.g]).addTo(m);mk.on('click',async()=>{const st=await fetchSt(code);let p=`<div class="popup-title">${country.f} ${country.n}</div>`;if(st.length>0){p+='<div class="station-list">';st.slice(0,10).forEach(s=>{p+=`<div class="station-item" data-url="${s.url_resolved}" data-name="${s.name.replace(/"/g,'&quot;')}">${s.name}</div>`});p+='</div>'}else{p+='<div class="no-stations">No stations</div>'}mk.bindPopup(p,{maxWidth:300}).openPopup()})}
-m.on('popupopen',()=>{setTimeout(()=>{document.querySelectorAll('.station-item').forEach(el=>{el.addEventListener('click',()=>{const url=el.getAttribute('data-url');const name=el.getAttribute('data-name');play({url,name},el.closest('.leaflet-popup-content').querySelector('.popup-title').textContent,el)})})},100)});
+const map=L.map('map').setView([20,0],2);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'}).addTo(map);
+const countries={
+TR:{name:"Turkey",lat:39,lng:35},
+US:{name:"USA",lat:37,-95},
+GB:{name:"UK",lat:54,-2},
+DE:{name:"Germany",lat:51,lng:10},
+FR:{name:"France",lat:46,lng:2},
+IT:{name:"Italy",lat:42,lng:12},
+ES:{name:"Spain",lat:40,lng:-4},
+BR:{name:"Brazil",lat:-14,lng:-52},
+JP:{name:"Japan",lat:36,lng:138},
+IN:{name:"India",lat:21,lng:78},
+CA:{name:"Canada",lat:56,lng:-106},
+AU:{name:"Australia",lat:-25,lng:134}
+};
+async function getStations(code){
+try{
+const r=await fetch(`https://de1.api.radio-browser.info/json/stations/bycountrycodeexact/${code}?limit=20&hidebroken=true&order=votes&reverse=true`);
+return await r.json();
+}catch(e){return[]}
+}
+for(const[code,c]of Object.entries(countries)){
+const m=L.marker([c.lat,c.lng]).addTo(map);
+m.on('click',async()=>{
+const stations=await getStations(code);
+let html=`<b>${c.name}</b><br>`;
+if(stations.length>0){
+html+='<div style="max-height:150px;overflow-y:auto">';
+stations.slice(0,8).forEach(s=>{
+html+=`<div style="cursor:pointer;padding:4px;border-bottom:1px solid #ddd" onclick="playRadio('${s.url_resolved}','${s.name.replace(/'/g,"\\'")}')">${s.name}</div>`;
+});
+html+='</div>';
+}else{
+html+='No stations found';
+}
+m.bindPopup(html,{maxWidth:300}).openPopup();
+});
+}
+function playRadio(url,name){
+document.getElementById('audio').src=url;
+document.getElementById('info').textContent=name;
+document.getElementById('player').classList.add('show');
+}
 </script>
 </body>
 </html>
