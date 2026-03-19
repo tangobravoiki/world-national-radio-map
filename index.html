@@ -48,8 +48,7 @@ AU:{name:"Australia",lat:-25,lng:134}
 async function getStations(code){
 try{
 const r=await fetch(`https://de1.api.radio-browser.info/json/stations/bycountrycodeexact/${code}?limit=100&hidebroken=true&order=votes&reverse=true`);}catch(e){return[]}
-const all=await r.json();return all.filter(s=>s.tags&&(s.tags.toLowerCase().includes('news')||s.tags.toLowerCase().includes('talk')))for(const[code,c]of Object.entries(countries)){
-const m=L.marker([c.lat,c.lng]).addTo(map);
+const all=await r.json();return code==='TR'?all:all.filter(s=>s.tags&&(s.tags.toLowerCase().includes('news')||s.tags.toLowerCase().includes('talk')))const m=L.marker([c.lat,c.lng]).addTo(map);
 m.on('click',async()=>{
 const stations=await getStations(code);
 let html=`<b>${c.name}</b><br>`;
